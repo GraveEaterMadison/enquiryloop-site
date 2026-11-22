@@ -1,27 +1,37 @@
 # EnquiryLoop
 
-A static landing page and browser-only admissions dashboard prototype for independent coaching centres.
+Self-service admissions CRM for tutors, academies, coaching centres and small education businesses.
 
-## Preview locally
-Open `index.html` in a browser. Select **Open demo** to use the dashboard at `app/index.html`.
+## Implemented in this release
+- Responsive marketing site and self-service signup/sign-in.
+- Supabase Auth integration (email + password).
+- One private workspace created for each new account.
+- Cloud-backed enquiry management, search, filters and CSV import/export.
+- Workspace-level PostgreSQL row-level security policies.
+- Free-plan limit of 50 enquiries enforced by a database trigger.
+- Billing schema foundation; paid checkout is **not connected yet**.
 
-## Publish with GitHub Pages
-1. Open this repository's **Settings → Pages**.
-2. Under **Build and deployment**, select **Deploy from a branch**.
-3. Choose branch `main` and folder `/(root)`, then Save.
-4. Wait for GitHub Pages to publish. The expected URL is `https://graveeatermadison.github.io/enquiryloop-site/`.
+## Connect the backend
+1. Create a project at https://supabase.com.
+2. Run the complete `supabase/schema.sql` in the Supabase SQL Editor.
+3. Edit `app/config.js`: replace `YOUR_SUPABASE_PROJECT_URL` and `YOUR_SUPABASE_ANON_KEY` with the project URL and anon/public key.
+4. In Supabase → Authentication → URL Configuration, set the Site URL to `https://graveeatermadison.github.io` and add `https://graveeatermadison.github.io/enquiryloop-site/app/` as a redirect URL.
+5. Test with two separate accounts and confirm each account can only see its own workspace data.
 
-## Before sharing publicly
-- Replace the placeholder `hello@example.com` in `index.html` with an email address you control.
-- Confirm that the EnquiryLoop name is available before using it commercially.
-- Do not enter real student names, phone numbers or education records into this demo. It stores data in browser local storage and has no login, server-side security or backups.
-- Add a privacy notice and secure production infrastructure before processing personal information.
-- Do not claim integrations, customer outcomes or guaranteed admission growth that do not exist.
+The anon key is designed for browser use with RLS. **Never put a Supabase service_role key or payment secret in browser code or GitHub.**
 
-## Product validation
-This is an early prototype, not a finished SaaS. Interview at least 10 coaching-centre operators, understand their current workflow, and seek paid pilot commitments before investing in production infrastructure.
+## Plans
+- Free: 50 enquiries/workspace.
+- Starter: proposed ₹199/month.
+- Pro: proposed ₹499/month.
 
-## Current limitations
-- Data is local to one browser/device.
-- No multi-user accounts, cloud sync, reminders, WhatsApp integration or role permissions.
-- Sample records are fictional demonstration data.
+Prices are proposals, not validated market prices. Paid checkout is not active. A server-side payment integration, verified webhooks, subscription management, cancellation/refund flows and testing are required before paid plans can be sold.
+
+## Before production
+- Configure Supabase credentials and test workspace isolation.
+- Add password reset, account deletion and support procedures.
+- Configure reliable backups, restore tests, monitoring and error reporting.
+- Complete legal review of privacy notice, terms, retention and applicable Indian privacy obligations.
+- Add secure billing before enabling paid subscriptions.
+
+Student/customer names, phone numbers, emails and notes are personal information. Use synthetic test data until security policies, safeguards and appropriate notices have been reviewed.
