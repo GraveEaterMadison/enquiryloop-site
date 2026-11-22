@@ -23,7 +23,7 @@ create trigger on_auth_user_created_enquiryloop after insert on auth.users for e
 create or replace function public.enforce_free_plan_limit() returns trigger language plpgsql security definer set search_path=public as $$
 declare p text; n integer;
 begin
- select plan into p from public.workspaces where id=new.workspace_id;
+ select plan into p from public.workspaces where id=new.workspace_id for update;
  if p='free' then
   select count(*) into n from public.enquiries where workspace_id=new.workspace_id;
   if n>=50 then raise exception 'Free plan limit reached (50 enquiries). Upgrade your plan to add more.'; end if;
