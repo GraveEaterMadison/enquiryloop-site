@@ -7,7 +7,12 @@ create index if not exists enquiries_workspace_created_idx on public.enquiries(w
 create index if not exists enquiries_workspace_followup_idx on public.enquiries(workspace_id,follow_up_at);
 create index if not exists workspace_members_user_idx on public.workspace_members(user_id);
 create table if not exists public.subscriptions(workspace_id uuid primary key references public.workspaces(id) on delete cascade,provider text,provider_customer_id text,provider_subscription_id text,status text not null default 'free' check(status in('free','trialing','active','past_due','cancelled')),current_period_end timestamptz,updated_at timestamptz not null default now());
-create or replace function public.is_workspace_member(target_workspace uuid) returns boolean language sql stable security definer set search_path=public as $$ select exists(select 1 from public.workspace_members wm where wm.workspace_id=target_workspace and wm.user_id=auth.uid()); $$;
+create schema if not exists private;
+revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated;
+create or replace function private.is_workspace_member(target_workspace uuid) returns boolean language sql stable security definer set search_path='' as $ select exists(select 1 from public.workspace_members wm where wm.workspace_id=target_workspace and wm.user_id=(select auth.uid())); $;
+revoke all on function private.is_workspace_member(uuid) from public, anon, authenticated;
+grant execute on function private.is_workspace_member(uuid) to authenticated;
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$
 declare wid uuid; bname text;
 begin
@@ -41,30 +46,30 @@ alter table public.profiles enable row level security;
 alter table public.enquiries enable row level security;
 alter table public.subscriptions enable row level security;
 drop policy if exists "members can view own workspaces" on public.workspaces;
-create policy "members can view own workspaces" on public.workspaces for select using(public.is_workspace_member(id));
+create policy "members can view own workspaces" on public.workspaces for select using(private.is_workspace_member(id));
 drop policy if exists "owners can update workspace" on public.workspaces;
 create policy "owners can update workspace" on public.workspaces for update using(owner_id=auth.uid()) with check(owner_id=auth.uid());
 drop policy if exists "members can view workspace membership" on public.workspace_members;
-create policy "members can view workspace membership" on public.workspace_members for select using(public.is_workspace_member(workspace_id));
+create policy "members can view workspace membership" on public.workspace_members for select using(private.is_workspace_member(workspace_id));
 drop policy if exists "users can view own profile" on public.profiles;
 create policy "users can view own profile" on public.profiles for select using(id=auth.uid());
 drop policy if exists "users can update own profile" on public.profiles;
 create policy "users can update own profile" on public.profiles for update using(id=auth.uid()) with check(id=auth.uid());
 drop policy if exists "members can read enquiries" on public.enquiries;
-create policy "members can read enquiries" on public.enquiries for select using(public.is_workspace_member(workspace_id));
+create policy "members can read enquiries" on public.enquiries for select using(private.is_workspace_member(workspace_id));
 drop policy if exists "members can add enquiries" on public.enquiries;
-create policy "members can add enquiries" on public.enquiries for insert with check(public.is_workspace_member(workspace_id) and created_by=auth.uid());
+create policy "members can add enquiries" on public.enquiries for insert with check(private.is_workspace_member(workspace_id) and created_by=auth.uid());
 drop policy if exists "members can update enquiries" on public.enquiries;
-create policy "members can update enquiries" on public.enquiries for update using(public.is_workspace_member(workspace_id)) with check(public.is_workspace_member(workspace_id));
+create policy "members can update enquiries" on public.enquiries for update using(private.is_workspace_member(workspace_id)) with check(private.is_workspace_member(workspace_id));
 drop policy if exists "members can delete enquiries" on public.enquiries;
-create policy "members can delete enquiries" on public.enquiries for delete using(public.is_workspace_member(workspace_id));
+create policy "members can delete enquiries" on public.enquiries for delete using(private.is_workspace_member(workspace_id));
 drop policy if exists "members can view subscription status" on public.subscriptions;
-create policy "members can view subscription status" on public.subscriptions for select using(public.is_workspace_member(workspace_id));
+create policy "members can view subscription status" on public.subscriptions for select using(private.is_workspace_member(workspace_id));
 -- No browser-side write policy exists for subscriptions. Only a trusted server-side webhook may change billing state.
 
 
 -- Browser API grants. RLS policies above remain the row-level security boundary.
-GRANT USAGE ON SCHEMA public TO authenticated;
+REVOKE ALL PRIVILEGES ON TABLE public.workspaces, public.workspace_members, public.profiles, public.enquiries, public.subscriptions FROM public, anon, authenticated;\nGRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON public.workspaces TO authenticated;
 REVOKE UPDATE ON public.workspaces FROM authenticated;
 GRANT UPDATE (name) ON public.workspaces TO authenticated;
@@ -72,4 +77,4 @@ GRANT SELECT ON public.workspace_members TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.enquiries TO authenticated;
 GRANT SELECT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT ON public.subscriptions TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_workspace_member(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM public, anon, authenticated;\nREVOKE ALL ON FUNCTION public.enforce_free_plan_limit() FROM public, anon, authenticated;\nREVOKE ALL ON FUNCTION public.touch_enquiry_updated_at() FROM public, anon, authenticated;\nCREATE INDEX IF NOT EXISTS enquiries_created_by_idx ON public.enquiries(created_by);\nCREATE INDEX IF NOT EXISTS workspaces_owner_id_idx ON public.workspaces(owner_id);
