@@ -112,6 +112,21 @@ alter table public.profiles enable row level security;
 alter table public.enquiries enable row level security;
 alter table public.subscriptions enable row level security;
 
+-- Remove legacy policies before recreating the complete policy set.
+do $block$
+declare p record;
+begin
+  for p in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname='public'
+      and tablename in ('workspaces','workspace_members','profiles','enquiries','subscriptions')
+  loop
+    execute format('drop policy if exists %I on %I.%I',p.policyname,p.schemaname,p.tablename);
+  end loop;
+end;
+$block$;
+
 drop policy if exists "members can view own workspaces" on public.workspaces;
 create policy "members can view own workspaces" on public.workspaces for select to authenticated
 using (private.is_workspace_member(id));
@@ -142,6 +157,8 @@ using (private.is_workspace_member(workspace_id));
 drop policy if exists "members can view subscription status" on public.subscriptions;
 create policy "members can view subscription status" on public.subscriptions for select to authenticated
 using (private.is_workspace_member(workspace_id));
+
+drop function if exists public.is_workspace_member(uuid);
 
 -- Remove all inherited browser privileges, then grant only the app's required operations.
 revoke all privileges on table public.workspaces, public.workspace_members, public.profiles,
