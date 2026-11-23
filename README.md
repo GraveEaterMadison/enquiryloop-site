@@ -5,7 +5,7 @@ Self-service admissions CRM for tutors, academies, coaching centres and small ed
 ## Implemented in this release
 - Responsive marketing site and self-service signup/sign-in.
 - Supabase Auth integration (email + password).
-- One private workspace created for each new account.
+- One private workspace created for each new account.\n- Self-service account deletion through an authenticated Edge Function (blocked when other workspace members would be affected).
 - Cloud-backed enquiry management, search, filters and CSV import/export (2 MB / 500-row import cap, validation, spreadsheet-formula-safe exports).
 - Workspace-level PostgreSQL row-level security policies using a private, non-exposed membership helper and least-privilege browser grants.
 - Free-plan limit of 50 enquiries enforced by a database trigger.
