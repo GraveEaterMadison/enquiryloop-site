@@ -6,8 +6,8 @@ Self-service admissions CRM for tutors, academies, coaching centres and small ed
 - Responsive marketing site and self-service signup/sign-in.
 - Supabase Auth integration (email + password).
 - One private workspace created for each new account.
-- Cloud-backed enquiry management, search, filters and CSV import/export.
-- Workspace-level PostgreSQL row-level security policies.
+- Cloud-backed enquiry management, search, filters and CSV import/export (2 MB / 500-row import cap, validation, spreadsheet-formula-safe exports).
+- Workspace-level PostgreSQL row-level security policies using a private, non-exposed membership helper and least-privilege browser grants.
 - Free-plan limit of 50 enquiries enforced by a database trigger.
 - Billing schema foundation; paid checkout is **not connected yet**.
 
@@ -29,7 +29,7 @@ Prices are proposals, not validated market prices. Paid checkout is not active. 
 
 ## Before production
 - Configure Supabase credentials and test workspace isolation.
-- Add password reset, account deletion and support procedures.
+- Enable leaked-password protection in Supabase Auth; add account deletion and support procedures.
 - Configure reliable backups, restore tests, monitoring and error reporting.
 - Complete legal review of privacy notice, terms, retention and applicable Indian privacy obligations.
 - Add secure billing before enabling paid subscriptions.
