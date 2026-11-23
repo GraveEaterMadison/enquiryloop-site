@@ -61,3 +61,15 @@ create policy "members can delete enquiries" on public.enquiries for delete usin
 drop policy if exists "members can view subscription status" on public.subscriptions;
 create policy "members can view subscription status" on public.subscriptions for select using(public.is_workspace_member(workspace_id));
 -- No browser-side write policy exists for subscriptions. Only a trusted server-side webhook may change billing state.
+
+
+-- Browser API grants. RLS policies above remain the row-level security boundary.
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT SELECT ON public.workspaces TO authenticated;
+REVOKE UPDATE ON public.workspaces FROM authenticated;
+GRANT UPDATE (name) ON public.workspaces TO authenticated;
+GRANT SELECT ON public.workspace_members TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.enquiries TO authenticated;
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+GRANT SELECT ON public.subscriptions TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_workspace_member(uuid) TO authenticated;
