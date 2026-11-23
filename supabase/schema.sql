@@ -13,7 +13,7 @@ grant usage on schema private to authenticated;
 create or replace function private.is_workspace_member(target_workspace uuid) returns boolean language sql stable security definer set search_path='' as $ select exists(select 1 from public.workspace_members wm where wm.workspace_id=target_workspace and wm.user_id=(select auth.uid())); $;
 revoke all on function private.is_workspace_member(uuid) from public, anon, authenticated;
 grant execute on function private.is_workspace_member(uuid) to authenticated;
-create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path='' as $
 declare wid uuid; bname text;
 begin
  insert into public.profiles(id,full_name) values(new.id,coalesce(new.raw_user_meta_data->>'full_name','')) on conflict(id) do nothing;
@@ -25,7 +25,7 @@ begin
 end; $$;
 drop trigger if exists on_auth_user_created_enquiryloop on auth.users;
 create trigger on_auth_user_created_enquiryloop after insert on auth.users for each row execute procedure public.handle_new_user();
-create or replace function public.enforce_free_plan_limit() returns trigger language plpgsql security definer set search_path=public as $$
+create or replace function public.enforce_free_plan_limit() returns trigger language plpgsql security definer set search_path='' as $
 declare p text; n integer;
 begin
  select plan into p from public.workspaces where id=new.workspace_id for update;
@@ -37,7 +37,7 @@ begin
 end; $$;
 drop trigger if exists enforce_enquiryloop_free_limit on public.enquiries;
 create trigger enforce_enquiryloop_free_limit before insert on public.enquiries for each row execute procedure public.enforce_free_plan_limit();
-create or replace function public.touch_enquiry_updated_at() returns trigger language plpgsql as $$ begin new.updated_at:=now(); return new; end; $$;
+create or replace function public.touch_enquiry_updated_at() returns trigger language plpgsql set search_path='' as $ begin new.updated_at:=pg_catalog.now(); return new; end; $;
 drop trigger if exists touch_enquiry_updated_at on public.enquiries;
 create trigger touch_enquiry_updated_at before update on public.enquiries for each row execute procedure public.touch_enquiry_updated_at();
 alter table public.workspaces enable row level security;
